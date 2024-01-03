@@ -9,9 +9,9 @@ const Home = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [temp, setTemp] = useState("");
     const [cityName, setCityName] = useState("");
-    const [brackImage, setBackImage] = useState("");
     const [selectedWeatherDescription, setSelectedWeatherDescription] = useState("");
     const backgroundOpacity = 0.2;
+    const [forecast, setForecast] = useState([]);
 
     useEffect(() => {
         if (dataWeather.length > 0) {
@@ -35,9 +35,13 @@ const Home = () => {
             setIsLoading(true);
             console.log("Ciudad", inputText);
             const request = `http://api.openweathermap.org/data/2.5/weather?q=${inputText}&appid=${apiKey}&lang=es&units=Metric`;
-            console.log(request);
+            const requestForecast = `http://api.openweathermap.org/data/2.5/forecast?q=${inputText}&appid=${apiKey}&lang=es&units=Metric`
             const response = await fetch(request);
+            const responseForecast = await fetch(requestForecast);
             const result = await response.json(); 
+            const result2 = await responseForecast.json();
+            console.log("resultado ",result2.list);
+            setForecast(result2.list);
             setTemp(result.main.temp);
             setDataWeather(result.weather);
             setCityName(result.name);
@@ -45,8 +49,10 @@ const Home = () => {
         } catch (error) {
             console.error('Error at fetching data:', error);
             showAlert();
+            setShowWeather(false)
         }finally {
             setIsLoading(false); 
+            
         }
 
     }
@@ -59,7 +65,7 @@ const Home = () => {
 
 
     return(
-        <div>
+        <div style={{flex: 1}}>
             <h2 style={{color: 'blue', marginBottom: 60}}>Información del clima</h2>
 
             <label>Ciudad:</label>
@@ -93,9 +99,10 @@ const Home = () => {
                             color: 'black', 
                             padding: '20px',
                             marginTop: 20,
+                            width: '100%'
                         }}
                     >
-                        <h3>Cuidad: {cityName}</h3>
+                        <h3>Ciudad: {cityName}</h3>
                         <p><b>Temperatura actual:</b> {temp}°</p> 
                         <ul>
                             <h4>Clima: </h4>
@@ -106,6 +113,42 @@ const Home = () => {
                            
                             ))}
                         </ul>
+                        <h3>Pronóstico</h3>
+                        <br />
+                        <table style={{ width: '100%' }}>
+                            <thead>
+                                <tr>
+                                    <th>Día</th>
+                                    <th>Hora</th>
+                                    <th>Temperatura</th>
+                                    <th>Descripción del clima</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {forecast && Array.isArray(forecast) && forecast.length > 0 ? (
+                                    forecast.map((item, id) => {
+                                        const fechaConAnio = new Date(item.dt_txt);
+                                        const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                                        const diaSemana = diasSemana[fechaConAnio.getDay()];
+                                        const horas = fechaConAnio.getHours() + ':' + fechaConAnio.getMinutes();
+                                        const fecha = fechaConAnio.getDate();
+
+                                        return (
+                                            <tr key={id}>
+                                                <td>{diaSemana} {fecha}</td>
+                                                <td>{horas}</td>
+                                                <td>{item.main.temp}°</td>
+                                                <td>{item.weather[0].description}</td>
+                                            </tr>
+                                        );
+                                    })
+                                ) : (
+                                    <tr>
+                                        <td colSpan="4">No hay datos de pronóstico disponibles.</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </>
                 
@@ -119,10 +162,7 @@ const Home = () => {
                 </>    
             )}
 
-
-
         </div>
-
     );
 }
 export default Home
